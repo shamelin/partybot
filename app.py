@@ -5,26 +5,27 @@
 
 import discord, yaml, glob
 from os.path import dirname, basename, isfile, join
+import partybot.manager
 
 class Lucio(discord.Client):
     config = None
+    manager = None
 
     # load the bot
     def load(self):
         print("Launching Lúcio v2 - by @hex and @logiwire\n")
         self.load_config()
+        self.manager = partybot.manager.CommandRouter(self)
         
     # method that gets executed when the bot is ready
     async def on_ready(self):
         print("Logged in as",self.user)
 
     # redirects to the message handler
-    async def on_message(self, message):
-        if message.author is self.user:
+    async def on_message(self, msg):
+        if msg.author is self.user:
             return
-
-        if message.content == "$hello":
-            await message.channel.send("world!")
+        await self.manager.handle(msg)
 
     # loads the configuration file
     def load_config(self):
