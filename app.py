@@ -3,29 +3,36 @@
 # @author Hex#8998 and Logiwire#5452
 # @version 2.0.0
 
-import discord, yaml
+import discord, yaml, glob
+from os.path import dirname, basename, isfile, join
+import partybot.manager
 
-client = discord.Client()
+class Lucio(discord.Client):
+    config = None
+    manager = None
 
-class Lucio(object):
-    def __init__(self):
+    # load the bot
+    def load(self):
+        print("Launching Lúcio v2 - by @hex and @logiwire\n")
         self.load_config()
-        client.run('NjI4MjIyNzM3MzY1NTk4MjI5.XZII7w.iY6-mtpPk3L-zhHSZQZrKk2MvD8')
+        self.manager = partybot.manager.CommandRouter(self)
+        
+    # method that gets executed when the bot is ready
+    async def on_ready(self):
+        print("Logged in as",self.user)
 
+    # redirects to the message handler
+    async def on_message(self, msg):
+        if msg.author is self.user:
+            return
+        await self.manager.handle(msg)
+
+    # loads the configuration file
     def load_config(self):
-        self.file = open("config.txt")
-        self.config = yaml.load(self.file, Loader=yaml.FullLoader)
-    
-@client.event
-async def on_ready():
-    print('We have logged in as {0.user}'.format(client))
+        if self.config is None:
+            self.file = open("config.yml")
+            self.config = yaml.load(self.file, Loader=yaml.FullLoader)
 
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-
-    if message.content.startswith('$hello'):
-        await message.channel.send('Hello!')
-
-Lucio()
+lucio = Lucio()
+lucio.load()
+lucio.run(lucio.config["token"])
