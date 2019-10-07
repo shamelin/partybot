@@ -22,7 +22,7 @@ class Lucio(discord.Client):
     # method that gets executed when the bot is ready
     async def on_ready(self):
         print("Logged in as",self.user)
-        await self.get_channel(int(self.config["default-channel"])).send("Howdy everyone! :wave: I'm online. Go ahead and summon me in your channel using **" + self.config["prefix"] + "joinme**")
+        await self.get_channel(int(self.config["default-channel"])).send("Howdy everyone! :wave: I'm online. Go ahead and summon me in your channel using **" + self.config["prefix"] + "join**")
 
     # redirects to the message handler
     async def on_message(self, msg):

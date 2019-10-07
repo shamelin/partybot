@@ -1,8 +1,8 @@
 import partybot.manager
 import discord
 
-@partybot.manager.CommandHandler(command="joinme")
-async def onJoinMeCommand(bot, msg, arguments):
+@partybot.manager.CommandHandler(command="resume")
+async def onResumeCommand(bot, msg, arguments):
     try:
         bot.active_voice_channel = await discord.VoiceChannel.connect(msg.author.voice.channel) # join user channel
     except AttributeError as e:
@@ -13,7 +13,13 @@ async def onJoinMeCommand(bot, msg, arguments):
             raise e
     except discord.errors.ClientException as e:
         if "Already connected to a voice channel." in str(e):
-            return
+            pass
         else:
             raise e
-    await msg.channel.send("I've joined you! Let's unite our forces.")
+
+        
+    if bot.active_voice_channel is None:
+        return await msg.channel.send("Not connected to a voice channel.")
+
+    bot.active_voice_channel.resume()
+    await msg.channel.send("Resuming the music! :notes:")
