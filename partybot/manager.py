@@ -11,13 +11,25 @@ class CommandRouter(object):
         # Check if the user is addressing to the bot
         if not msg.content.startswith(self.bot.config["prefix"]):
             return
+
+        # Start typing indicator
+        await msg.channel.trigger_typing()
         
         # get the command name
         cmd_name = msg.content.split(" ")[0][len(self.bot.config["prefix"]):]
         executer = await self.get_cmd(cmd_name)
+        arguments = msg.content.split(" ")
+        del arguments[0]
         
         # execute
-        await executer.execute(self.bot, msg)
+        try:
+            await executer.execute(self.bot, msg, arguments)
+        except AttributeError as e:
+            if "object has no attribute 'execute'" in str(e):
+                print(msg.author,"tried to execute command",self.bot.config["prefix"] + cmd_name,"but command does not exist!")
+                await msg.channel.send("**Error:** Command not found.")
+            else:
+                raise e
         
 
     async def get_cmd(self, cmd):
@@ -50,10 +62,10 @@ class CommandHandler(object):
     def __call__(self, fn, *args, **kwargs):
         self._fn = fn
 
-    async def execute(self, bot, message, parameters={}, *args, **kwargs):
-        async def run(bot, message, parameters, fn, *args, **kwargs):
-            await fn(self, message=message, *args, **kwargs)
-        return await run(bot, message, parameters, self.fn, *args, **kwargs)
+    async def execute(self, bot, msg, arguments=[], *args, **kwargs):
+        async def run(bot, msg, arguments, fn, *args, **kwargs):
+            await fn(bot, msg=msg, arguments=arguments, *args, **kwargs)
+        return await run(bot, msg, arguments, self.fn, *args, **kwargs)
 
     @property
     def command(self):

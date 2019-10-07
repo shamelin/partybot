@@ -8,22 +8,28 @@ from os.path import dirname, basename, isfile, join
 import partybot.manager
 
 class Lucio(discord.Client):
+    po = None
     config = None
     manager = None
+    channel = None
 
     # load the bot
     def load(self):
-        print("Launching Lúcio v2 - by @hex and @logiwire\n")
+        print("Launching Lúcio v2 - by @hex#8998 and @logiwire#5452\n")
         self.load_config()
         self.manager = partybot.manager.CommandRouter(self)
         
     # method that gets executed when the bot is ready
     async def on_ready(self):
         print("Logged in as",self.user)
+        await self.get_channel(int(self.config["default-channel"])).send("Howdy everyone! :wave: I'm online. Go ahead and summon me in your channel using **" + self.config["prefix"] + "joinme**")
 
     # redirects to the message handler
     async def on_message(self, msg):
-        if msg.author is self.user:
+        if msg.content.startswith(self.config["prefix"]):
+            print(msg.author,"said:",msg.content)
+        if msg.author == self.user:
+            print("Bot said:",msg.content)
             return
         await self.manager.handle(msg)
 
