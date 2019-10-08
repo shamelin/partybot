@@ -4,3 +4,4 @@ polib
 youtube-dl
 ffmpeg-python
 pynacl
+requests
