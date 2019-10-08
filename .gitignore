@@ -1,3 +1,5 @@
 config.yml
 *.pyc
 *.pyc
+*.webm
+*.pyc

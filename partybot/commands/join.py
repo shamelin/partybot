@@ -7,7 +7,7 @@ async def onJoinMeCommand(bot, msg, arguments):
         bot.active_voice_channel = await discord.VoiceChannel.connect(msg.author.voice.channel) # join user channel
     except AttributeError as e:
         if "'NoneType' object has no attribute 'channel'" in str(e):
-            await msg.channel.send("**Error:** It looks like you are not in a vocal channel. I can't join you.")
+            await msg.channel.send("> :no_entry_sign: **Error:** It looks like you are not in a vocal channel. I can't join you.")
             return
         else:
             raise e
@@ -16,4 +16,4 @@ async def onJoinMeCommand(bot, msg, arguments):
             return
         else:
             raise e
-    await msg.channel.send("I've joined you! Let's unite our forces.")
+    await msg.channel.send("> :white_check_mark: I've joined you! Let's unite our forces.")
