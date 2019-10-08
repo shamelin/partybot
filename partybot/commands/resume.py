@@ -1,8 +1,8 @@
 import partybot.manager
 import discord
 
-@partybot.manager.CommandHandler(command="volume")
-async def onVolumeCommand(bot, msg, arguments):
+@partybot.manager.CommandHandler(command="resume")
+async def onResumeCommand(bot, msg, arguments):
     try:
         bot.active_voice_channel = await discord.VoiceChannel.connect(msg.author.voice.channel) # join user channel
     except AttributeError as e:
@@ -19,11 +19,7 @@ async def onVolumeCommand(bot, msg, arguments):
 
         
     if bot.active_voice_channel is None:
-        return await msg.channel.send("Not connected to a voice channel.")
+        return await msg.channel.send("> :no_entry_sign: Not connected to a voice channel.")
 
-    try:
-        bot.active_voice_channel.source.volume = int(arguments[0]) / 100
-        await msg.channel.send("> :speaker: Changed volume to {}%".format(arguments[0]))
-    except Exception as e:
-        await msg.channel.send("> :no_entry_sign: **Error:** Invalid volume. (must be a number)")
-        raise e
+    bot.active_voice_channel.resume()
+    await msg.channel.send("> :white_check_mark: Resuming the music! :notes:")

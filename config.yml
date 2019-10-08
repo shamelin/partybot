@@ -7,10 +7,21 @@
 # going to the *OAuth 2* page and checking the *bot* scope. After
 # that, copy the link and paste it in the browser and add select
 # the server you want!
-token: "NjI4MjIyNzM3MzY1NTk4MjI5.XZaA0A.VvIB7M6LmlAEkUj1bT6g723QV94"
+token: "NjI4MjIyNzM3MzY1NTk4MjI5.XZozig.YRPYDfNsxo3R1hn9zXY8-5C8gMg"
 
 # This is the prefix that will be used to distinguish the normal
 # messages sent from one user to another. When a message starts
 # with the prefix below, the bot will answer the request to the
 # user that sent the message.
 prefix: "$"
+
+# This the is the language that will be used by the bot to interact
+# with the users.
+# Available languages: fr, en
+lang: "fr"
+
+# This is the default channel where the bot will talk.
+default-channel: "629454874580484097"
+
+# This is the default voice channel where the bot will blast music.
+default-voice-channel: "345290540880756736"
