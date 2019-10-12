@@ -10,6 +10,8 @@ import ast
 import time
 import subprocess
 import asyncio
+import json
+import random
 
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ''
@@ -21,7 +23,7 @@ ytdl_format_options = {
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
-    'quiet': True,
+    'quiet': False,
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
@@ -101,8 +103,9 @@ class Queuer(object):
         #url_parameters = parse.parse_qs(arguments[0].split("?")[1])
         # Check if the provided link is a YouTube link
         ytres = requests.get("https://www.youtube.com/oembed?format=json&url=" + arguments[0])
-        if ytres.status_code == 200:
-            self.add_to_queue("yt", arguments[0])
+        if ytres.status_code == 200: # if a yt link
+            await self.fetch_yt_links(arguments[0], msg) # add links to queue
+            await self.bot.get_channel(int(self.bot.config["default-channel"])).send('> :speaker: Added to queue: **{}**'.format(arguments[0]))
             await self.play_queue(msg.channel)
             return
 
@@ -114,27 +117,36 @@ class Queuer(object):
             self.bot.active_voice_channel.stop()
             self.queue.pop(0)
             self.save_queue()
-        except AttributeError: # if queue_future is not defined yet
-            pass
-        except IndexError: # if there is no music in queue
-            pass
-        await self.play_queue(msg.channel)
+            await self.play_queue(msg.channel)
+        except Exception: # if there is no music in queue
+            await self.play_related_video()
         
     async def play_queue(self, channel=None):
         if channel is None:
             channel = self.bot.get_channel(int(self.bot.config["default-channel"]))
 
         if len(self.queue) > 0:
-            next_e = self.queue[0]
-            player = await self.play_next(next_e)
+            next_e = self.queue[0] # get the next video to play
+            self.bot.set_lvp(parse.parse_qs(next_e['url'].split("?")[1])['v'][0]) # save config
 
-            await self.bot.get_channel(int(self.bot.config["default-channel"])).send('> :speaker: Now playing: **{}**'.format(player.title))
-
+            player = await self.play_next(next_e) # try to play
+            if player is not None: # bot is already playing music
+                await self.bot.get_channel(int(self.bot.config["default-channel"])).send('> :speaker: Now playing: **{}**'.format(player.title))
             self.loop = asyncio.get_event_loop()
             self.future = asyncio.Future()
             self.queue_future = asyncio.ensure_future(self.next_play_queue(player, channel))
         else:
-            await channel.send("> :no_entry_sign: **Error:** No music in queue.") # TODO: Change to YouTube recommendations
+            await self.play_related_video()
+
+    async def play_related_video(self):
+        next_e = {
+            "type": "yt",
+            "url": self.fetch_related_video_link()
+        }
+
+        player = await self.play_next(next_e, skip=True)
+        self.bot.set_lvp(parse.parse_qs(next_e['url'].split("?")[1])['v'][0]) # save config
+        await self.bot.get_channel(int(self.bot.config["default-channel"])).send('> :speaker: Now playing: **{}**'.format(player.title))
 
     @asyncio.coroutine
     def next_play_queue(self, player, channel):
@@ -142,10 +154,32 @@ class Queuer(object):
         self.queue.pop(0)
         self.save_queue()
         self.future.set_result("done")
-        self.play_queue(channel)
+        yield from self.play_queue(channel)
         
-    async def play_next(self, next_e):
-        if next_e["type"] == "yt" and not self.bot.active_voice_channel.is_playing():
+    async def play_next(self, next_e, skip=False):
+        if next_e["type"] == "yt" and (skip is True or not self.bot.active_voice_channel.is_playing()):
             player = await YTDLSource.from_url(next_e["url"], loop=self.bot.loop)
+            self.bot.active_voice_channel.stop()
             self.bot.active_voice_channel.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
             return player
+
+    async def fetch_yt_links(self, link, msg=None):
+        try:
+            with youtube_dl.YoutubeDL() as ydl: # open ydl
+                print(link)
+                result = ydl.extract_info(link, download=False) # extract info without downloading videos
+                if "entries" in result: # if playlist
+                    for entry in result['entries']: # for each video in playlist
+                        self.add_to_queue("yt", entry['webpage_url']) # add to queue
+                else: # it's one video
+                    self.add_to_queue("yt", result['webpage_url']) # add to queue
+        except youtube_dl.utils.DownloadError as e:
+            if msg is None:
+                await self.bot.get_channel(int(self.bot.config["default-channel"])).send('> :no_entry_sign: **Error:** youtube_dl said: ' + str(e))
+            else:
+                await msg.channel.send('> :no_entry_sign: **Error:** youtube_dl said: ' + str(e))
+
+    def fetch_related_video_link(self):
+        obj = json.loads(requests.get("https://www.googleapis.com/youtube/v3/search?part=snippet&relatedToVideoId=" + self.bot.lvp + "&type=video&key=" + self.bot.config["yt-api-key"]).content)["items"]
+        random.shuffle(obj) # shuffle object of related videos for more surprise
+        return "https://www.youtube.com/watch?v=" + obj[0]["id"]["videoId"]
