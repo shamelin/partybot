@@ -125,11 +125,12 @@ class Queuer(object):
             channel = self.bot.get_channel(int(self.bot.config["default-channel"]))
 
         if len(self.queue) > 0:
-            next_e = self.queue[0] # get sht next video to play
+            next_e = self.queue[0] # get the next video to play
             self.bot.set_lvp(parse.parse_qs(next_e['url'].split("?")[1])['v'][0]) # save config
 
             player = await self.play_next(next_e) # play
-            await self.bot.get_channel(int(self.bot.config["default-channel"])).send('> :speaker: Now playing: **{}**'.format(player.title))
+            if player is not None:
+                await self.bot.get_channel(int(self.bot.config["default-channel"])).send('> :speaker: Now playing: **{}**'.format(player.title))
 
             self.loop = asyncio.get_event_loop()
             self.future = asyncio.Future()
@@ -143,7 +144,7 @@ class Queuer(object):
             "url": self.fetch_related_video_link()
         }
 
-        player = await self.play_next(next_e)
+        player = await self.play_next(next_e, skip=True)
         self.bot.set_lvp(parse.parse_qs(next_e['url'].split("?")[1])['v'][0]) # save config
         await self.bot.get_channel(int(self.bot.config["default-channel"])).send('> :speaker: Now playing: **{}**'.format(player.title))
 
@@ -155,8 +156,8 @@ class Queuer(object):
         self.future.set_result("done")
         yield from self.play_queue(channel)
         
-    async def play_next(self, next_e):
-        if next_e["type"] == "yt":
+    async def play_next(self, next_e, skip=False):
+        if next_e["type"] == "yt" and (skip is True or not self.bot.active_voice_channel.is_playing()):
             player = await YTDLSource.from_url(next_e["url"], loop=self.bot.loop)
             self.bot.active_voice_channel.stop()
             self.bot.active_voice_channel.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
