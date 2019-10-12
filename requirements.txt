@@ -5,3 +5,4 @@ youtube-dl
 ffmpeg-python
 pynacl
 requests
+google-api-python-client

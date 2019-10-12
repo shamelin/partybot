@@ -7,7 +7,14 @@
 # going to the *OAuth 2* page and checking the *bot* scope. After
 # that, copy the link and paste it in the browser and add select
 # the server you want!
-token: "NjI4MjIyNzM3MzY1NTk4MjI5.XZozig.YRPYDfNsxo3R1hn9zXY8-5C8gMg"
+token: "YOUR DISCORD BOT TOKEN HERE"
+
+# This is the api key that will be used by the bot to fetch the
+# next related video to the last video played in the server.
+#
+# You can generate an API key at the following address:
+# https://console.developers.google.com/apis/credentials
+yt-api-key: "YOUR YOUTUBE API KEY HERE"
 
 # This is the prefix that will be used to distinguish the normal
 # messages sent from one user to another. When a message starts
@@ -24,4 +31,4 @@ lang: "fr"
 default-channel: "629454874580484097"
 
 # This is the default voice channel where the bot will blast music.
-default-voice-channel: "345290540880756736"
+default-voice-channel: "632372161960738856"

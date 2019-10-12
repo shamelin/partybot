@@ -71,12 +71,22 @@ class Lucio(discord.Client):
             self.file = open("config.yml")
             self.config = yaml.load(self.file, Loader=yaml.FullLoader)
 
+    # sets last video played
+    def set_lvp(self, lvp):
+        with open("lvp", "w+") as file:
+            file.write(str(lvp))
+
     def at_exit(self):
         self.now_playing.cleanup()
 
     @property
     def queuer(self):
         return self._queuer
+
+    @property
+    def lvp(self):
+        with open("lvp", "r") as file:
+            return file.read()
 
     
 
