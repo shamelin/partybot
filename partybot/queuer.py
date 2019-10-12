@@ -105,6 +105,7 @@ class Queuer(object):
         ytres = requests.get("https://www.youtube.com/oembed?format=json&url=" + arguments[0])
         if ytres.status_code == 200: # if a yt link
             await self.fetch_yt_links(arguments[0], msg) # add links to queue
+            await self.bot.get_channel(int(self.bot.config["default-channel"])).send('> :speaker: Added to queue: **{}**'.format(arguments[0]))
             await self.play_queue(msg.channel)
             return
 
@@ -128,10 +129,9 @@ class Queuer(object):
             next_e = self.queue[0] # get the next video to play
             self.bot.set_lvp(parse.parse_qs(next_e['url'].split("?")[1])['v'][0]) # save config
 
-            player = await self.play_next(next_e) # play
-            if player is not None:
+            player = await self.play_next(next_e) # try to play
+            if player is not None: # bot is already playing music
                 await self.bot.get_channel(int(self.bot.config["default-channel"])).send('> :speaker: Now playing: **{}**'.format(player.title))
-
             self.loop = asyncio.get_event_loop()
             self.future = asyncio.Future()
             self.queue_future = asyncio.ensure_future(self.next_play_queue(player, channel))
