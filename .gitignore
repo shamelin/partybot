@@ -3,3 +3,6 @@ config.yml
 *.pyc
 *.webm
 *.pyc
+*.m4a
+config.yml
+*.pyc
