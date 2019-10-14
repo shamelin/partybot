@@ -118,11 +118,9 @@ class Queuer(object):
 
         # url_parameters = parse.parse_qs(arguments[0].split("?")[1])  # param object of url provided by user
         # Check if the provided link is a YouTube link
-        ytres = requests.get("https://www.youtube.com/oembed?format=json&url=" + arguments[0])  # ask yt if link = valid
-        if ytres.status_code == 200:  # if a yt link
-            await self.fetch_yt_links(arguments[0], msg)  # add links to queue
-            await self.bot.get_channel(int(self.bot.config["default-channel"])) \
-                .send('> :speaker: Added to queue: **{}**'.format(arguments[0]))
+        yt = requests.get("https://www.youtube.com/oembed?format=json&url=" + arguments[0])  # ask yt if link = valid
+        if yt.status_code == 200:  # if a yt link
+            await self.fetch_yt_links(arguments[0], msg, add_to_queue=True)  # add links to queue
             await self.play_queue(msg.channel)
             return
 
@@ -191,7 +189,7 @@ class Queuer(object):
         self.future.set_result("done")
         yield from self.play_queue(channel)
 
-    async def fetch_yt_links(self, link, msg=None):
+    async def fetch_yt_links(self, link, msg=None, add_to_queue=False):
         try:
             with youtube_dl.YoutubeDL() as ydl:  # open ydl
                 result = ydl.extract_info(link, download=False)  # extract info without downloading videos
@@ -200,6 +198,16 @@ class Queuer(object):
                         self.add_to_queue("yt", entry['webpage_url'])  # add to queue
                 else:  # it's one video
                     self.add_to_queue("yt", result['webpage_url'])  # add to queue
+                if add_to_queue:
+                    channel = self.bot.get_channel(int(self.bot.config["default-channel"]))
+                    creator = result['creator']
+                    if result['creator'] is None:
+                        creator = result['uploader']
+                    if msg is not None:
+                        channel = msg.channel
+
+                    await channel.send('> :speaker: Added to queue: **{}** - by **{}**\n`Link: {}`'
+                                       .format(result['title'], creator, result['webpage_url']))
         except youtube_dl.utils.DownloadError as e:
             channel = self.bot.get_channel(int(self.bot.config["default-channel"]))
             if msg is not None:
