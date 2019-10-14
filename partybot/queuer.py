@@ -42,6 +42,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         self.data = data
 
+        self.id = data.get('id')
         self.title = data.get('title')
         self.creator = data.get('creator')
         self.uploader = data.get('uploader')
@@ -73,6 +74,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 class Queuer(object):
     bot = None
     queue = []
+    currently_playing = None
     running_queue = False
     queue_future = None
     last_related = False  # if last music played was a related one.
@@ -88,7 +90,13 @@ class Queuer(object):
         function as it is already embedded in the source code - it will already be called when
         necessary."""
         with open("queue.json", "w+") as file:
-            file.write(str(self.queue))
+            try:
+                queue = self.queue
+                for entry in queue:
+                    del entry["data"]
+            except Exception:
+                pass
+            file.write(str(queue))
 
     def load_queue(self):
         """This function loads the queue from the queue.json file to the @link{self.queue} list.
@@ -121,6 +129,7 @@ class Queuer(object):
         yt = requests.get("https://www.youtube.com/oembed?format=json&url=" + arguments[0])  # ask yt if link = valid
         if yt.status_code == 200:  # if a yt link
             await self.fetch_yt_links(arguments[0], msg, add_to_queue=True)  # add links to queue
+            await self.load_bunch_data()
             await self.play_queue(msg.channel)
             return
 
@@ -150,6 +159,7 @@ class Queuer(object):
         if len(self.queue) > 0:
             next_e = self.queue[0]  # get the next video to play
             player = await self.play_next(next_e)  # try to play
+            await self.load_bunch_data()
         else:
             next_e = {  # create the related video json object
                 "type": "yt",
@@ -162,9 +172,10 @@ class Queuer(object):
             if player.creator is None:
                 creator = player.uploader
 
+            self.currently_playing = player
             await self.bot.get_channel(int(self.bot.config["default-channel"])). \
-                send('> :speaker: Now playing: **{}** - by **{}**'
-                     .format(player.title, creator))  # display next music
+                send('> :speaker: Now playing: **{}** - by **{}** (Link: `{}`)'
+                     .format(player.title, creator, next_e["url"]))  # display next music
             self.bot.set_lvp(parse.parse_qs(next_e['url'].split("?")[1])['v'][0])  # sets last video played (lvp)
 
             self.loop = asyncio.get_event_loop()
@@ -221,3 +232,16 @@ class Queuer(object):
             self.bot.config["yt-api-key"]).content)["items"]
         random.shuffle(obj)  # shuffle object of related videos for more surprise
         return "https://www.youtube.com/watch?v=" + obj[0]["id"]["videoId"]
+
+    async def load_bunch_data(self):
+        i = 0
+        while i <= (self.bot.config["dl-bunch"] - 1):
+            try:
+                if "data" not in self.queue[i]:
+                    with youtube_dl.YoutubeDL() as ydl:  # open ydl
+                        data = ydl.extract_info(self.queue[i]["url"],
+                                                download=False)  # extract info without downloading videos
+                        self.queue[i]["data"] = data
+            except IndexError:  # there's less than self.bot.config["dl-bunch"]
+                pass
+            i += 1

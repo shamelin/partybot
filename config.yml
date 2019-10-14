@@ -31,4 +31,8 @@ lang: "fr"
 default-channel: "629454874580484097"
 
 # This is the default voice channel where the bot will blast music.
-default-voice-channel: "632372161960738856"
+default-voice-channel: "345290540880756736"
+
+# This is the number of musics the bot should download at a bunch to
+# keep the ball rolling. Default is 5.
+dl-bunch: 5
